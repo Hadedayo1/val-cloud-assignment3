@@ -1,0 +1,69 @@
+---
+- name: Deploy Sign-up Form Website
+  hosts: ubuntu_node, centos_node
+  become: yes
+
+  vars:
+    website_directory: "/var/www/signup-form"
+    apache_service: "apache2"  # For Ubuntu/Debian
+    apache_config_path: "/etc/apache2/sites-available/signup-form.conf"  # For Ubuntu/Debian
+    # apache_service: "httpd"  # For CentOS/RHEL
+    # apache_config_path: "/etc/httpd/conf.d/signup-form.conf"  # For CentOS/RHEL
+
+  tasks:
+    - name: Install Apache
+      package:
+        name: "{{ apache_service }}"
+        state: present
+      tags: 
+        - apache
+
+    - name: Start Apache service
+      service:
+        name: "{{ apache_service }}"
+        state: started
+      tags: 
+        - apache
+
+    - name: Enable Apache service on boot
+      service:
+        name: "{{ apache_service }}"
+        enabled: yes
+      tags: 
+        - apache
+
+    - name: Create website directory
+      file:
+        path: "{{ website_directory }}"
+        state: directory
+      tags: 
+        - website
+
+    - name: Copy sign-up-form files
+      copy:
+        src: /path/to/your/sign-up-form/files
+        dest: "{{ website_directory }}"
+      tags: 
+        - website
+
+    - name: Create Apache virtual host config
+      template:
+        src: signup-form.conf.j2
+        dest: "{{ apache_config_path }}"
+      tags: 
+        - apache
+
+    - name: Enable Apache virtual host
+      command: "a2ensite {{ apache_config_path }}"
+      args:
+        creates: "{{ apache_config_path | dirname }}/signup-form.conf"
+      when: apache_service == "apache2"
+      tags: 
+        - apache
+
+    - name: Reload Apache
+      service:
+        name: "{{ apache_service }}"
+        state: reloaded
+      tags: 
+        - apache
